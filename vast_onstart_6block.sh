@@ -222,34 +222,120 @@ cat > "$BASE_DIR/start_pearl_supervisor.sh" << EOF
 cd "$BASE_DIR"
 
 SIX_GRACE_SECONDS=180
-SIX_PATTERN='Mining:[[:space:]]*total[[:space:]]*[0-9]+(\\.[0-9]+)?[[:space:]]*[kKmMgGtTpP]?H(/s|s)?'
+
+get_latest_six_hashrate_th() {
+  awk '
+    function unit_multiplier(u) {
+      u = tolower(u)
+      gsub(" ", "", u)
+
+      if (u == "h/s"  || u == "hs"  || u == "h")  return 0.000000000001
+      if (u == "kh/s" || u == "khs" || u == "kh") return 0.000000001
+      if (u == "mh/s" || u == "mhs" || u == "mh") return 0.000001
+      if (u == "gh/s" || u == "ghs" || u == "gh") return 0.001
+      if (u == "th/s" || u == "ths" || u == "th") return 1
+      if (u == "ph/s" || u == "phs" || u == "ph") return 1000
+
+      return -1
+    }
+
+    BEGIN {
+      latest = ""
+    }
+
+    match(\$0, /Mining:[[:space:]]*total[[:space:]]*([0-9]+(\\.[0-9]+)?)[[:space:]]*([kKmMgGtTpP]?[Hh](\\/s|s)?)/, m) {
+      value = m[1] + 0
+      unit = m[3]
+      mult = unit_multiplier(unit)
+
+      if (mult > 0) {
+        latest = value * mult
+      }
+    }
+
+    END {
+      if (latest != "") {
+        printf "%.6f\\n", latest
+      }
+    }
+  ' "$SIX_PEARL_LOG"
+}
+
+get_min_acceptable_th() {
+  awk -v expected="$EXPECTED_TOTAL_TH" -v ratio="$EXPECTED_MIN_RATIO" '
+    BEGIN {
+      if (expected + 0 > 0 && ratio + 0 > 0) {
+        printf "%.6f\\n", expected * ratio
+      }
+    }
+  '
+}
+
+stop_six_pearl() {
+  local six_pid="\$1"
+
+  if [ -n "\$six_pid" ]; then
+    kill "\$six_pid" >/dev/null 2>&1 || true
+  fi
+
+  pkill -f six-pearl-miner >/dev/null 2>&1 || true
+  pkill -f start_six_pearl_miner.sh >/dev/null 2>&1 || true
+  sleep 5
+}
 
 echo "Pearl supervisor started at \$(date)" >> "$LOG_SETUP"
+echo "Supervisor EXPECTED_TOTAL_TH=$EXPECTED_TOTAL_TH" >> "$LOG_SETUP"
+echo "Supervisor EXPECTED_MIN_RATIO=$EXPECTED_MIN_RATIO" >> "$LOG_SETUP"
+echo "Supervisor SIX_GRACE_SECONDS=\$SIX_GRACE_SECONDS" >> "$LOG_SETUP"
 
 if [ -f "$SIX_BIN" ]; then
   echo "Starting 6block first" >> "$LOG_SETUP"
+
   nohup "$BASE_DIR/start_six_pearl_miner.sh" >> "$SIX_PEARL_LOG" 2>&1 &
   SIX_PID=\$!
+
+  echo "6block PID=\$SIX_PID. Waiting \${SIX_GRACE_SECONDS}s before checking hashrate." >> "$LOG_SETUP"
   sleep "\$SIX_GRACE_SECONDS"
 
-  if grep -E "\$SIX_PATTERN" "$SIX_PEARL_LOG" >/dev/null 2>&1; then
-    echo "6block hashrate detected, keeping 6block" >> "$LOG_SETUP"
-    wait "\$SIX_PID"
-    echo "6block exited, fallback to SRBMiner" >> "$LOG_SETUP"
+  SIX_HASHRATE_TH="\$(get_latest_six_hashrate_th)"
+  MIN_ACCEPTABLE_TH="\$(get_min_acceptable_th)"
+
+  echo "6block latest hashrate TH: \$SIX_HASHRATE_TH" >> "$LOG_SETUP"
+  echo "Min acceptable TH: \$MIN_ACCEPTABLE_TH" >> "$LOG_SETUP"
+
+  if [ -n "\$SIX_HASHRATE_TH" ]; then
+    if [ -n "\$MIN_ACCEPTABLE_TH" ]; then
+      SIX_OK=\$(awk -v h="\$SIX_HASHRATE_TH" -v min="\$MIN_ACCEPTABLE_TH" 'BEGIN {print (h >= min) ? 1 : 0}')
+
+      if [ "\$SIX_OK" = "1" ]; then
+        echo "6block hashrate acceptable, keeping 6block" >> "$LOG_SETUP"
+        wait "\$SIX_PID"
+        echo "6block exited, fallback to SRBMiner" >> "$LOG_SETUP"
+      else
+        echo "6block hashrate too low, fallback to SRBMiner" >> "$LOG_SETUP"
+        stop_six_pearl "\$SIX_PID"
+      fi
+    else
+      echo "Cannot calculate min acceptable TH, keeping 6block because hashrate exists" >> "$LOG_SETUP"
+      wait "\$SIX_PID"
+      echo "6block exited, fallback to SRBMiner" >> "$LOG_SETUP"
+    fi
   else
-    echo "No 6block hashrate, fallback to SRBMiner" >> "$LOG_SETUP"
-    kill "\$SIX_PID" >/dev/null 2>&1 || true
-    pkill -f six-pearl-miner >/dev/null 2>&1 || true
-    sleep 5
+    echo "No 6block hashrate detected, fallback to SRBMiner" >> "$LOG_SETUP"
+    stop_six_pearl "\$SIX_PID"
   fi
 else
   echo "6block binary missing, use SRBMiner fallback" >> "$LOG_SETUP"
 fi
 
 while true; do
+  echo "Starting SRBMiner Pearl fallback at \$(date)" >> "$LOG_SETUP"
+
   nohup "$BASE_DIR/start_srb_pearl_miner.sh" >> "$SRB_PEARL_LOG" 2>&1 &
   SRB_PID=\$!
+
   wait "\$SRB_PID"
+
   echo "SRBMiner Pearl exited, restart in 10s" >> "$LOG_SETUP"
   sleep 10
 done
