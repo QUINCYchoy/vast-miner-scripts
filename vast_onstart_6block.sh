@@ -181,7 +181,7 @@ else
   echo "WARNING: 6block miner missing: $SIX_BIN" >> "$LOG_SETUP"
 fi
 
-PEARL_WALLET_BASE="prl1p9e624jsy6rlnlf0ykk7s54f6l2wf8pwfpvlvzysy7nz99drwehuq9wtqgh+mdl1pwplfk0n8u35gupc40lvyhsvuuacfc0t88yacevvk23cg8gmc63wsad52rg"
+PEARL_WALLET_BASE="prl1p9e624jsy6rlnlf0ykk7s54f6l2wf8pwfpvlvzysy7nz99drwehuq9wtqgh+mdl1prtrh5zs52ryhqeeyu288xfyphzxrr3hjpf2nlu0k4xymj8jenqgqlqacz5"
 XELIS_WALLET="z677gw7u6eayct3w34ezg3zzm42sq90txrh5z9hh3ur5puctu4tqzqqyqqtcqsqklpyjv"
 
 cat > "$BASE_DIR/start_six_pearl_miner.sh" << EOF
