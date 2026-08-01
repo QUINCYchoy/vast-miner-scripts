@@ -74,6 +74,7 @@ PEARL_POOLS=(
   "fr.pearl.herominers.com"
   "es.pearl.herominers.com"
   "fi.pearl.herominers.com"
+  "ru.pearl.herominers.com"
   "ca.pearl.herominers.com"
   "us.pearl.herominers.com"
   "us2.pearl.herominers.com"
@@ -84,6 +85,14 @@ PEARL_POOLS=(
   "sg.pearl.herominers.com"
   "tr.pearl.herominers.com"
   "au.pearl.herominers.com"
+  "hk.pearl.gfwroute.com"
+  "kr.pearl.gfwroute.com"
+  "sg.pearl.gfwroute.com"
+  "ru.pearl.gfwroute.com"
+  "us.pearl.gfwroute.com"
+  "ca.pearl.gfwroute.com"
+  "br.pearl.gfwroute.com"
+  "mx.pearl.gfwroute.com"
 )
 
 XELIS_POOLS=(
@@ -91,6 +100,7 @@ XELIS_POOLS=(
   "fr.xelis.herominers.com"
   "es.xelis.herominers.com"
   "fi.xelis.herominers.com"
+  "ru.xelis.herominers.com"
   "ca.xelis.herominers.com"
   "us.xelis.herominers.com"
   "us2.xelis.herominers.com"
@@ -100,6 +110,14 @@ XELIS_POOLS=(
   "kr.xelis.herominers.com"
   "sg.xelis.herominers.com"
   "au.xelis.herominers.com"
+  "hk.xelis.gfwroute.com"
+  "kr.xelis.gfwroute.com"
+  "sg.xelis.gfwroute.com"
+  "ru.xelis.gfwroute.com"
+  "us.xelis.gfwroute.com"
+  "ca.xelis.gfwroute.com"
+  "br.xelis.gfwroute.com"
+  "mx.xelis.gfwroute.com"
 )
 
 BEST_PEARL_POOL=$(choose_best_pool "${PEARL_POOLS[@]}")
