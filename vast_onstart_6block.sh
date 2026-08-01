@@ -149,9 +149,9 @@ echo "GPU count: $GPU_COUNT" >> "$LOG_SETUP"
 echo "GPU model: $GPU_MODEL" >> "$LOG_SETUP"
 echo "Worker name: $WORKER_NAME" >> "$LOG_SETUP"
 
-SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.4.4/SRBMiner-Multi-3-4-4-Linux.tar.gz"
-SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-4-4-Linux.tar.gz"
-SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-4-4"
+SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.4.7/SRBMiner-Multi-3-4-7-Linux.tar.gz"
+SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-4-7-Linux.tar.gz"
+SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-4-7"
 SRB_BIN="$SRB_DIR/SRBMiner-MULTI"
 
 if [ ! -f "$SRB_BIN" ]; then
@@ -165,8 +165,8 @@ else
   echo "ERROR: SRBMiner missing: $SRB_BIN" >> "$LOG_SETUP"
 fi
 
-SIX_URL="https://github.com/6block/pearl-miner/releases/download/v0.1.5/six-pearl-0.1.5.tar.gz"
-SIX_ARCHIVE="$BASE_DIR/six-pearl-0.1.5.tar.gz"
+SIX_URL="https://github.com/6block/pearl-miner/releases/download/v0.1.6/six-pearl-0.1.6.tar.gz"
+SIX_ARCHIVE="$BASE_DIR/six-pearl-0.1.6.tar.gz"
 SIX_DIR="$BASE_DIR/six-pearl"
 SIX_BIN="$SIX_DIR/six-pearl-miner"
 
