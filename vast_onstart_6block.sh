@@ -13,18 +13,14 @@ chmod -R 777 /workspace || true
 chmod -R 777 "$BASE_DIR" || true
 
 LOG_SETUP="$BASE_DIR/miner_setup.log"
-SIX_PEARL_LOG="$BASE_DIR/six_pearl_miner.log"
 SRB_PEARL_LOG="$BASE_DIR/srb_pearl_miner.log"
-PEARL_SUPERVISOR_LOG="$BASE_DIR/pearl_supervisor.log"
-PEARL_LOG="$BASE_DIR/pearl_miner.log"
 XELIS_LOG="$BASE_DIR/xelis_miner.log"
 
 APT_DONE_FLAG="$BASE_DIR/.apt_done"
 SRB_DONE_FLAG="$BASE_DIR/.srb_done"
-SIX_DONE_FLAG="$BASE_DIR/.six_done"
 
-touch "$LOG_SETUP" "$SIX_PEARL_LOG" "$SRB_PEARL_LOG" "$PEARL_SUPERVISOR_LOG" "$PEARL_LOG" "$XELIS_LOG"
-chmod 666 "$LOG_SETUP" "$SIX_PEARL_LOG" "$SRB_PEARL_LOG" "$PEARL_SUPERVISOR_LOG" "$PEARL_LOG" "$XELIS_LOG"
+touch "$LOG_SETUP" "$SRB_PEARL_LOG" "$XELIS_LOG"
+chmod 666 "$LOG_SETUP" "$SRB_PEARL_LOG" "$XELIS_LOG"
 
 echo "========== Miner setup started: $(date) ==========" >> "$LOG_SETUP"
 
@@ -176,9 +172,9 @@ echo "GPU count: $GPU_COUNT" >> "$LOG_SETUP"
 echo "GPU model: $GPU_MODEL" >> "$LOG_SETUP"
 echo "Worker name: $WORKER_NAME" >> "$LOG_SETUP"
 
-SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.4.7/SRBMiner-Multi-3-4-7-Linux.tar.gz"
-SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-4-7-Linux.tar.gz"
-SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-4-7"
+SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.4.8/SRBMiner-Multi-3-4-8-Linux.tar.gz"
+SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-4-8-Linux.tar.gz"
+SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-4-8"
 SRB_BIN="$SRB_DIR/SRBMiner-MULTI"
 
 if [ -f "$SRB_BIN" ]; then
@@ -196,52 +192,18 @@ else
   echo "ERROR: SRBMiner missing: $SRB_BIN" >> "$LOG_SETUP"
 fi
 
-SIX_URL="https://github.com/6block/pearl-miner/releases/download/v0.1.6/six-pearl-0.1.6.tar.gz"
-SIX_ARCHIVE="$BASE_DIR/six-pearl-0.1.6.tar.gz"
-SIX_DIR="$BASE_DIR/six-pearl"
-SIX_BIN="$SIX_DIR/six-pearl-miner"
-
-if [ -f "$SIX_BIN" ]; then
-  echo "[DOWNLOAD] Skip 6block miner download because binary exists: $SIX_BIN" >> "$LOG_SETUP"
-else
-  echo "[DOWNLOAD] 6block miner binary missing, downloading..." >> "$LOG_SETUP"
-  wget -O "$SIX_ARCHIVE" "$SIX_URL" >> "$LOG_SETUP" 2>&1
-  tar -xzf "$SIX_ARCHIVE" -C "$BASE_DIR" >> "$LOG_SETUP" 2>&1
-fi
-
-if [ -f "$SIX_BIN" ]; then
-  chmod +x "$SIX_BIN"
-  touch "$SIX_DONE_FLAG"
-else
-  echo "WARNING: 6block miner missing: $SIX_BIN" >> "$LOG_SETUP"
-fi
-
 PEARL_WALLET_BASE="prl1p9e624jsy6rlnlf0ykk7s54f6l2wf8pwfpvlvzysy7nz99drwehuq9wtqgh+mdl1prtrh5zs52ryhqeeyu288xfyphzxrr3hjpf2nlu0k4xymj8jenqgqlqacz5"
 XELIS_WALLET="z677gw7u6eayct3w34ezg3zzm42sq90txrh5z9hh3ur5puctu4tqzqqyqqtcqsqklpyjv"
 
-pkill -f six-pearl-miner >/dev/null 2>&1 || true
 pkill -f SRBMiner-MULTI >/dev/null 2>&1 || true
-pkill -f start_six_pearl_miner.sh >/dev/null 2>&1 || true
 pkill -f start_srb_pearl_miner.sh >/dev/null 2>&1 || true
-pkill -f start_pearl_supervisor.sh >/dev/null 2>&1 || true
 pkill -f start_xelis_miner.sh >/dev/null 2>&1 || true
-
-cat > "$BASE_DIR/start_six_pearl_miner.sh" << EOF
-#!/bin/bash
-cd "$BASE_DIR"
-while true; do
-  echo "Starting 6block Pearl miner at \$(date)"
-  "$SIX_BIN" --pool ${BEST_PEARL_POOL}:1200 --wallet ${PEARL_WALLET_BASE}.${WORKER_NAME} --proof-field plain_proof_zst
-  echo "6block Pearl stopped at \$(date), restart in 10s"
-  sleep 10
-done
-EOF
 
 cat > "$BASE_DIR/start_srb_pearl_miner.sh" << EOF
 #!/bin/bash
 cd "$BASE_DIR"
 while true; do
-  echo "Starting SRBMiner Pearl fallback at \$(date)"
+  echo "Starting SRBMiner Pearl at \$(date)"
   "$SRB_BIN" --algorithm pearlhash --pool ${BEST_PEARL_POOL}:1200,de.pearl.herominers.com:1200 --wallet ${PEARL_WALLET_BASE} --worker ${WORKER_NAME}
   echo "SRBMiner Pearl stopped at \$(date), restart in 10s"
   sleep 10
@@ -259,134 +221,13 @@ while true; do
 done
 EOF
 
-cat > "$BASE_DIR/start_pearl_supervisor.sh" << EOF
-#!/bin/bash
-cd "$BASE_DIR"
-
-SIX_GRACE_SECONDS=180
-
-get_latest_six_hashrate_th() {
-  awk '
-    function unit_multiplier(u) {
-      u = tolower(u)
-      gsub(" ", "", u)
-
-      if (u == "h/s"  || u == "hs"  || u == "h")  return 0.000000000001
-      if (u == "kh/s" || u == "khs" || u == "kh") return 0.000000001
-      if (u == "mh/s" || u == "mhs" || u == "mh") return 0.000001
-      if (u == "gh/s" || u == "ghs" || u == "gh") return 0.001
-      if (u == "th/s" || u == "ths" || u == "th") return 1
-      if (u == "ph/s" || u == "phs" || u == "ph") return 1000
-
-      return -1
-    }
-
-    BEGIN {
-      latest = ""
-    }
-
-    match($0, /Mining:[[:space:]]*total[[:space:]]*([0-9]+(\.[0-9]+)?)[[:space:]]*([kKmMgGtTpP]?[Hh](\/s|s)?)/, m) {
-      value = m[1] + 0
-      unit = m[3]
-      mult = unit_multiplier(unit)
-
-      if (mult > 0) {
-        latest = value * mult
-      }
-    }
-
-    END {
-      if (latest != "") {
-        printf "%.6f\n", latest
-      }
-    }
-  ' "$SIX_PEARL_LOG"
-}
-
-get_min_acceptable_th() {
-  awk -v expected="$EXPECTED_TOTAL_TH" -v ratio="$EXPECTED_MIN_RATIO" '
-    BEGIN {
-      if (expected + 0 > 0 && ratio + 0 > 0) {
-        printf "%.6f\n", expected * ratio
-      }
-    }
-  '
-}
-
-stop_six_pearl() {
-  local six_pid="$1"
-
-  if [ -n "$six_pid" ]; then
-    kill "$six_pid" >/dev/null 2>&1 || true
-  fi
-
-  pkill -f six-pearl-miner >/dev/null 2>&1 || true
-  pkill -f start_six_pearl_miner.sh >/dev/null 2>&1 || true
-  sleep 5
-}
-
-echo "Pearl supervisor started at $(date)" >> "$LOG_SETUP"
-echo "Supervisor EXPECTED_TOTAL_TH=$EXPECTED_TOTAL_TH" >> "$LOG_SETUP"
-echo "Supervisor EXPECTED_MIN_RATIO=$EXPECTED_MIN_RATIO" >> "$LOG_SETUP"
-echo "Supervisor SIX_GRACE_SECONDS=$SIX_GRACE_SECONDS" >> "$LOG_SETUP"
-
-if [ -f "$SIX_BIN" ]; then
-  echo "Starting 6block first" >> "$LOG_SETUP"
-
-  nohup "$BASE_DIR/start_six_pearl_miner.sh" >> "$SIX_PEARL_LOG" 2>&1 &
-  SIX_PID=$!
-
-  echo "6block PID=$SIX_PID. Waiting ${SIX_GRACE_SECONDS}s before checking hashrate." >> "$LOG_SETUP"
-  sleep "$SIX_GRACE_SECONDS"
-
-  SIX_HASHRATE_TH="$(get_latest_six_hashrate_th)"
-  MIN_ACCEPTABLE_TH="$(get_min_acceptable_th)"
-
-  echo "6block latest hashrate TH: $SIX_HASHRATE_TH" >> "$LOG_SETUP"
-  echo "Min acceptable TH: $MIN_ACCEPTABLE_TH" >> "$LOG_SETUP"
-
-  if [ -n "$SIX_HASHRATE_TH" ]; then
-    if [ -n "$MIN_ACCEPTABLE_TH" ]; then
-      SIX_OK=$(awk -v h="$SIX_HASHRATE_TH" -v min="$MIN_ACCEPTABLE_TH" 'BEGIN {print (h >= min) ? 1 : 0}')
-
-      if [ "$SIX_OK" = "1" ]; then
-        echo "6block hashrate acceptable, keeping 6block" >> "$LOG_SETUP"
-        wait "$SIX_PID"
-        echo "6block exited, fallback to SRBMiner" >> "$LOG_SETUP"
-      else
-        echo "6block hashrate too low, fallback to SRBMiner" >> "$LOG_SETUP"
-        stop_six_pearl "$SIX_PID"
-      fi
-    else
-      echo "Cannot calculate min acceptable TH, keeping 6block because hashrate exists" >> "$LOG_SETUP"
-      wait "$SIX_PID"
-      echo "6block exited, fallback to SRBMiner" >> "$LOG_SETUP"
-    fi
-  else
-    echo "No 6block hashrate detected, fallback to SRBMiner" >> "$LOG_SETUP"
-    stop_six_pearl "$SIX_PID"
-  fi
-else
-  echo "6block binary missing, use SRBMiner fallback" >> "$LOG_SETUP"
-fi
-
-while true; do
-  echo "Starting SRBMiner Pearl fallback at $(date)" >> "$LOG_SETUP"
-  nohup "$BASE_DIR/start_srb_pearl_miner.sh" >> "$SRB_PEARL_LOG" 2>&1 &
-  SRB_PID=$!
-  wait "$SRB_PID"
-  echo "SRBMiner Pearl exited, restart in 10s" >> "$LOG_SETUP"
-  sleep 10
-done
-EOF
-
 chmod +x "$BASE_DIR"/start_*.sh
 chmod -R 777 "$BASE_DIR" || true
 
 if [ -f "$SRB_BIN" ]; then
-  nohup "$BASE_DIR/start_pearl_supervisor.sh" >> "$PEARL_SUPERVISOR_LOG" 2>&1 &
+  nohup "$BASE_DIR/start_srb_pearl_miner.sh" >> "$SRB_PEARL_LOG" 2>&1 &
   nohup "$BASE_DIR/start_xelis_miner.sh" >> "$XELIS_LOG" 2>&1 &
-  echo "Pearl supervisor started" >> "$LOG_SETUP"
+  echo "SRBMiner Pearl started" >> "$LOG_SETUP"
   echo "Xelis miner started" >> "$LOG_SETUP"
 else
   echo "Miners NOT started because SRBMiner missing" >> "$LOG_SETUP"
