@@ -19,6 +19,10 @@ PEARL_SUPERVISOR_LOG="$BASE_DIR/pearl_supervisor.log"
 PEARL_LOG="$BASE_DIR/pearl_miner.log"
 XELIS_LOG="$BASE_DIR/xelis_miner.log"
 
+APT_DONE_FLAG="$BASE_DIR/.apt_done"
+SRB_DONE_FLAG="$BASE_DIR/.srb_done"
+SIX_DONE_FLAG="$BASE_DIR/.six_done"
+
 touch "$LOG_SETUP" "$SIX_PEARL_LOG" "$SRB_PEARL_LOG" "$PEARL_SUPERVISOR_LOG" "$PEARL_LOG" "$XELIS_LOG"
 chmod 666 "$LOG_SETUP" "$SIX_PEARL_LOG" "$SRB_PEARL_LOG" "$PEARL_SUPERVISOR_LOG" "$PEARL_LOG" "$XELIS_LOG"
 
@@ -38,8 +42,15 @@ echo "EXPECTED_TOTAL_TH: $EXPECTED_TOTAL_TH" >> "$LOG_SETUP"
 echo "EXPECTED_TH_PER_GPU: $EXPECTED_TH_PER_GPU" >> "$LOG_SETUP"
 echo "EXPECTED_GPU_COUNT: $EXPECTED_GPU_COUNT" >> "$LOG_SETUP"
 
-apt update >> "$LOG_SETUP" 2>&1
-apt install -y wget tar iputils-ping pciutils coreutils sed gawk curl ca-certificates procps psmisc >> "$LOG_SETUP" 2>&1
+if [ ! -f "$APT_DONE_FLAG" ]; then
+  echo "[BOOTSTRAP] First-time apt install starting at $(date)" >> "$LOG_SETUP"
+  apt update >> "$LOG_SETUP" 2>&1
+  apt install -y wget tar iputils-ping pciutils coreutils sed gawk curl ca-certificates procps psmisc >> "$LOG_SETUP" 2>&1
+  touch "$APT_DONE_FLAG"
+  echo "[BOOTSTRAP] apt install done at $(date)" >> "$LOG_SETUP"
+else
+  echo "[BOOTSTRAP] Skip apt install because $APT_DONE_FLAG exists" >> "$LOG_SETUP"
+fi
 
 cd "$BASE_DIR" || exit 1
 
@@ -49,7 +60,7 @@ choose_best_pool() {
 
   for pool in "$@"; do
     echo "Testing ping: $pool" >> "$LOG_SETUP"
-    avg_latency=$(ping -c 4 -W 2 "$pool" 2>/dev/null | awk -F'/' '/rtt|round-trip/ {print $5}')
+    avg_latency=$(ping -c 2 -W 2 "$pool" 2>/dev/null | awk -F'/' '/rtt|round-trip/ {print $5}')
 
     if [ -z "$avg_latency" ]; then
       echo "$pool ping failed" >> "$LOG_SETUP"
@@ -59,7 +70,6 @@ choose_best_pool() {
     echo "$pool average latency: ${avg_latency} ms" >> "$LOG_SETUP"
 
     is_better=$(awk -v a="$avg_latency" -v b="$best_latency" 'BEGIN {print (a < b) ? 1 : 0}')
-
     if [ "$is_better" = "1" ]; then
       best_latency="$avg_latency"
       best_pool="$pool"
@@ -147,19 +157,18 @@ else
   GPU_COUNT=$(lspci | grep -i "nvidia" | grep -i "vga\|3d" | wc -l)
 fi
 
-if [ -z "$GPU_COUNT" ] || [ "$GPU_COUNT" -eq 0 ]; then
+if [ -z "$GPU_COUNT" ] || [ "$GPU_COUNT" -eq 0 ] 2>/dev/null; then
   GPU_COUNT=0
 fi
 
 SHORT_GPU_MODEL=$(echo "$GPU_MODEL" | sed 's/NVIDIA//Ig' | sed 's/GeForce//Ig' | sed 's/Graphics Device//Ig' | sed 's/[^A-Za-z0-9]//g')
-
 if [ -z "$SHORT_GPU_MODEL" ]; then
   SHORT_GPU_MODEL="GPU"
 fi
 
 WORKER_NAME="${GPU_COUNT}x${SHORT_GPU_MODEL}_M${MACHINE_ID}"
 
-if [ "$GPU_COUNT" -eq 0 ]; then
+if [ "$GPU_COUNT" -eq 0 ] 2>/dev/null; then
   WORKER_NAME="CPUonly_M${MACHINE_ID}"
 fi
 
@@ -172,13 +181,17 @@ SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-4-7-Linux.tar.gz"
 SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-4-7"
 SRB_BIN="$SRB_DIR/SRBMiner-MULTI"
 
-if [ ! -f "$SRB_BIN" ]; then
+if [ -f "$SRB_BIN" ]; then
+  echo "[DOWNLOAD] Skip SRBMiner download because binary exists: $SRB_BIN" >> "$LOG_SETUP"
+else
+  echo "[DOWNLOAD] SRBMiner binary missing, downloading..." >> "$LOG_SETUP"
   wget -O "$SRB_ARCHIVE" "$SRB_URL" >> "$LOG_SETUP" 2>&1
   tar -xzf "$SRB_ARCHIVE" -C "$BASE_DIR" >> "$LOG_SETUP" 2>&1
 fi
 
 if [ -f "$SRB_BIN" ]; then
   chmod +x "$SRB_BIN"
+  touch "$SRB_DONE_FLAG"
 else
   echo "ERROR: SRBMiner missing: $SRB_BIN" >> "$LOG_SETUP"
 fi
@@ -188,19 +201,30 @@ SIX_ARCHIVE="$BASE_DIR/six-pearl-0.1.6.tar.gz"
 SIX_DIR="$BASE_DIR/six-pearl"
 SIX_BIN="$SIX_DIR/six-pearl-miner"
 
-if [ ! -f "$SIX_BIN" ]; then
+if [ -f "$SIX_BIN" ]; then
+  echo "[DOWNLOAD] Skip 6block miner download because binary exists: $SIX_BIN" >> "$LOG_SETUP"
+else
+  echo "[DOWNLOAD] 6block miner binary missing, downloading..." >> "$LOG_SETUP"
   wget -O "$SIX_ARCHIVE" "$SIX_URL" >> "$LOG_SETUP" 2>&1
   tar -xzf "$SIX_ARCHIVE" -C "$BASE_DIR" >> "$LOG_SETUP" 2>&1
 fi
 
 if [ -f "$SIX_BIN" ]; then
   chmod +x "$SIX_BIN"
+  touch "$SIX_DONE_FLAG"
 else
   echo "WARNING: 6block miner missing: $SIX_BIN" >> "$LOG_SETUP"
 fi
 
 PEARL_WALLET_BASE="prl1p9e624jsy6rlnlf0ykk7s54f6l2wf8pwfpvlvzysy7nz99drwehuq9wtqgh+mdl1prtrh5zs52ryhqeeyu288xfyphzxrr3hjpf2nlu0k4xymj8jenqgqlqacz5"
 XELIS_WALLET="z677gw7u6eayct3w34ezg3zzm42sq90txrh5z9hh3ur5puctu4tqzqqyqqtcqsqklpyjv"
+
+pkill -f six-pearl-miner >/dev/null 2>&1 || true
+pkill -f SRBMiner-MULTI >/dev/null 2>&1 || true
+pkill -f start_six_pearl_miner.sh >/dev/null 2>&1 || true
+pkill -f start_srb_pearl_miner.sh >/dev/null 2>&1 || true
+pkill -f start_pearl_supervisor.sh >/dev/null 2>&1 || true
+pkill -f start_xelis_miner.sh >/dev/null 2>&1 || true
 
 cat > "$BASE_DIR/start_six_pearl_miner.sh" << EOF
 #!/bin/bash
@@ -261,7 +285,7 @@ get_latest_six_hashrate_th() {
       latest = ""
     }
 
-    match(\$0, /Mining:[[:space:]]*total[[:space:]]*([0-9]+(\\.[0-9]+)?)[[:space:]]*([kKmMgGtTpP]?[Hh](\\/s|s)?)/, m) {
+    match($0, /Mining:[[:space:]]*total[[:space:]]*([0-9]+(\.[0-9]+)?)[[:space:]]*([kKmMgGtTpP]?[Hh](\/s|s)?)/, m) {
       value = m[1] + 0
       unit = m[3]
       mult = unit_multiplier(unit)
@@ -273,7 +297,7 @@ get_latest_six_hashrate_th() {
 
     END {
       if (latest != "") {
-        printf "%.6f\\n", latest
+        printf "%.6f\n", latest
       }
     }
   ' "$SIX_PEARL_LOG"
@@ -283,17 +307,17 @@ get_min_acceptable_th() {
   awk -v expected="$EXPECTED_TOTAL_TH" -v ratio="$EXPECTED_MIN_RATIO" '
     BEGIN {
       if (expected + 0 > 0 && ratio + 0 > 0) {
-        printf "%.6f\\n", expected * ratio
+        printf "%.6f\n", expected * ratio
       }
     }
   '
 }
 
 stop_six_pearl() {
-  local six_pid="\$1"
+  local six_pid="$1"
 
-  if [ -n "\$six_pid" ]; then
-    kill "\$six_pid" >/dev/null 2>&1 || true
+  if [ -n "$six_pid" ]; then
+    kill "$six_pid" >/dev/null 2>&1 || true
   fi
 
   pkill -f six-pearl-miner >/dev/null 2>&1 || true
@@ -301,59 +325,56 @@ stop_six_pearl() {
   sleep 5
 }
 
-echo "Pearl supervisor started at \$(date)" >> "$LOG_SETUP"
+echo "Pearl supervisor started at $(date)" >> "$LOG_SETUP"
 echo "Supervisor EXPECTED_TOTAL_TH=$EXPECTED_TOTAL_TH" >> "$LOG_SETUP"
 echo "Supervisor EXPECTED_MIN_RATIO=$EXPECTED_MIN_RATIO" >> "$LOG_SETUP"
-echo "Supervisor SIX_GRACE_SECONDS=\$SIX_GRACE_SECONDS" >> "$LOG_SETUP"
+echo "Supervisor SIX_GRACE_SECONDS=$SIX_GRACE_SECONDS" >> "$LOG_SETUP"
 
 if [ -f "$SIX_BIN" ]; then
   echo "Starting 6block first" >> "$LOG_SETUP"
 
   nohup "$BASE_DIR/start_six_pearl_miner.sh" >> "$SIX_PEARL_LOG" 2>&1 &
-  SIX_PID=\$!
+  SIX_PID=$!
 
-  echo "6block PID=\$SIX_PID. Waiting \${SIX_GRACE_SECONDS}s before checking hashrate." >> "$LOG_SETUP"
-  sleep "\$SIX_GRACE_SECONDS"
+  echo "6block PID=$SIX_PID. Waiting ${SIX_GRACE_SECONDS}s before checking hashrate." >> "$LOG_SETUP"
+  sleep "$SIX_GRACE_SECONDS"
 
-  SIX_HASHRATE_TH="\$(get_latest_six_hashrate_th)"
-  MIN_ACCEPTABLE_TH="\$(get_min_acceptable_th)"
+  SIX_HASHRATE_TH="$(get_latest_six_hashrate_th)"
+  MIN_ACCEPTABLE_TH="$(get_min_acceptable_th)"
 
-  echo "6block latest hashrate TH: \$SIX_HASHRATE_TH" >> "$LOG_SETUP"
-  echo "Min acceptable TH: \$MIN_ACCEPTABLE_TH" >> "$LOG_SETUP"
+  echo "6block latest hashrate TH: $SIX_HASHRATE_TH" >> "$LOG_SETUP"
+  echo "Min acceptable TH: $MIN_ACCEPTABLE_TH" >> "$LOG_SETUP"
 
-  if [ -n "\$SIX_HASHRATE_TH" ]; then
-    if [ -n "\$MIN_ACCEPTABLE_TH" ]; then
-      SIX_OK=\$(awk -v h="\$SIX_HASHRATE_TH" -v min="\$MIN_ACCEPTABLE_TH" 'BEGIN {print (h >= min) ? 1 : 0}')
+  if [ -n "$SIX_HASHRATE_TH" ]; then
+    if [ -n "$MIN_ACCEPTABLE_TH" ]; then
+      SIX_OK=$(awk -v h="$SIX_HASHRATE_TH" -v min="$MIN_ACCEPTABLE_TH" 'BEGIN {print (h >= min) ? 1 : 0}')
 
-      if [ "\$SIX_OK" = "1" ]; then
+      if [ "$SIX_OK" = "1" ]; then
         echo "6block hashrate acceptable, keeping 6block" >> "$LOG_SETUP"
-        wait "\$SIX_PID"
+        wait "$SIX_PID"
         echo "6block exited, fallback to SRBMiner" >> "$LOG_SETUP"
       else
         echo "6block hashrate too low, fallback to SRBMiner" >> "$LOG_SETUP"
-        stop_six_pearl "\$SIX_PID"
+        stop_six_pearl "$SIX_PID"
       fi
     else
       echo "Cannot calculate min acceptable TH, keeping 6block because hashrate exists" >> "$LOG_SETUP"
-      wait "\$SIX_PID"
+      wait "$SIX_PID"
       echo "6block exited, fallback to SRBMiner" >> "$LOG_SETUP"
     fi
   else
     echo "No 6block hashrate detected, fallback to SRBMiner" >> "$LOG_SETUP"
-    stop_six_pearl "\$SIX_PID"
+    stop_six_pearl "$SIX_PID"
   fi
 else
   echo "6block binary missing, use SRBMiner fallback" >> "$LOG_SETUP"
 fi
 
 while true; do
-  echo "Starting SRBMiner Pearl fallback at \$(date)" >> "$LOG_SETUP"
-
+  echo "Starting SRBMiner Pearl fallback at $(date)" >> "$LOG_SETUP"
   nohup "$BASE_DIR/start_srb_pearl_miner.sh" >> "$SRB_PEARL_LOG" 2>&1 &
-  SRB_PID=\$!
-
-  wait "\$SRB_PID"
-
+  SRB_PID=$!
+  wait "$SRB_PID"
   echo "SRBMiner Pearl exited, restart in 10s" >> "$LOG_SETUP"
   sleep 10
 done
