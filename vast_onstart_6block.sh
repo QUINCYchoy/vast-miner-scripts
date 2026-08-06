@@ -115,6 +115,7 @@ XELIS_POOLS=(
   "hk.xelis.herominers.com"
   "kr.xelis.herominers.com"
   "sg.xelis.herominers.com"
+  "tr.xelis.herominers.com"
   "au.xelis.herominers.com"
   "hk.xelis.gfwroute.com"
   "kr.xelis.gfwroute.com"
