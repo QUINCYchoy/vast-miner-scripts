@@ -173,9 +173,9 @@ echo "GPU count: $GPU_COUNT" >> "$LOG_SETUP"
 echo "GPU model: $GPU_MODEL" >> "$LOG_SETUP"
 echo "Worker name: $WORKER_NAME" >> "$LOG_SETUP"
 
-SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.5.2/SRBMiner-Multi-3-5-2-Linux.tar.gz"
-SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-5-2-Linux.tar.gz"
-SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-5-2"
+SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.5.3/SRBMiner-Multi-3-5-3-Linux.tar.gz"
+SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-5-3-Linux.tar.gz"
+SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-5-3"
 SRB_BIN="$SRB_DIR/SRBMiner-MULTI"
 
 if [ -f "$SRB_BIN" ]; then
@@ -205,7 +205,7 @@ cat > "$BASE_DIR/start_srb_pearl_miner.sh" << EOF
 cd "$BASE_DIR"
 while true; do
   echo "Starting SRBMiner Pearl at \$(date)"
-  "$SRB_BIN" --algorithm pearlhash --pool ${BEST_PEARL_POOL}:1200,de.pearl.herominers.com:1200 --wallet ${PEARL_WALLET_BASE} --worker ${WORKER_NAME}
+  "$SRB_BIN" --algorithm pearlhash --pool ${BEST_PEARL_POOL}:1200,de.pearl.herominers.com:1200 --wallet ${PEARL_WALLET_BASE} --worker ${WORKER_NAME} --pearl-k2
   echo "SRBMiner Pearl stopped at \$(date), restart in 10s"
   sleep 10
 done
