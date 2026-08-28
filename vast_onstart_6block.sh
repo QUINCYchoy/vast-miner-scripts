@@ -173,9 +173,9 @@ echo "GPU count: $GPU_COUNT" >> "$LOG_SETUP"
 echo "GPU model: $GPU_MODEL" >> "$LOG_SETUP"
 echo "Worker name: $WORKER_NAME" >> "$LOG_SETUP"
 
-SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.5.9/SRBMiner-Multi-3-5-9-Linux.tar.gz"
-SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-5-9-Linux.tar.gz"
-SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-5-9"
+SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.6.0/SRBMiner-Multi-3-6-0-Linux.tar.gz"
+SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-6-0-Linux.tar.gz"
+SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-6-0"
 SRB_BIN="$SRB_DIR/SRBMiner-MULTI"
 
 if [ -f "$SRB_BIN" ]; then
@@ -193,7 +193,7 @@ else
   echo "ERROR: SRBMiner missing: $SRB_BIN" >> "$LOG_SETUP"
 fi
 
-PEARL_WALLET_BASE="prl1p9e624jsy6rlnlf0ykk7s54f6l2wf8pwfpvlvzysy7nz99drwehuq9wtqgh+mdl1prtrh5zs52ryhqeeyu288xfyphzxrr3hjpf2nlu0k4xymj8jenqgqlqacz5"
+PEARL_WALLET_BASE="prl1p9e624jsy6rlnlf0ykk7s54f6l2wf8pwfpvlvzysy7nz99drwehuq9wtqgh"
 XELIS_WALLET="z677gw7u6eayct3w34ezg3zzm42sq90txrh5z9hh3ur5puctu4tqzqqyqqtcqsqklpyjv"
 
 pkill -f SRBMiner-MULTI >/dev/null 2>&1 || true
