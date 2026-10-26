@@ -76,66 +76,36 @@ choose_best_pool() {
 }
 
 PEARL_POOLS=(
-  "de.pearl.herominers.com"
-  "fr.pearl.herominers.com"
-  "es.pearl.herominers.com"
-  "fi.pearl.herominers.com"
-  "ru.pearl.herominers.com"
-  "ca.pearl.herominers.com"
-  "us.pearl.herominers.com"
-  "us2.pearl.herominers.com"
-  "us3.pearl.herominers.com"
-  "br.pearl.herominers.com"
-  "hk.pearl.herominers.com"
-  "kr.pearl.herominers.com"
-  "sg.pearl.herominers.com"
-  "tr.pearl.herominers.com"
-  "au.pearl.herominers.com"
-  "hk.pearl.gfwroute.com"
-  "kr.pearl.gfwroute.com"
-  "sg.pearl.gfwroute.com"
-  "ru.pearl.gfwroute.com"
-  "us.pearl.gfwroute.com"
-  "ca.pearl.gfwroute.com"
-  "br.pearl.gfwroute.com"
-  "mx.pearl.gfwroute.com"
+  "prl.kryptex.network"
+  "prl-eu.kryptex.network"
+  "prl-us.kryptex.network"
+  "prl-br.kryptex.network"
+  "prl-sg.kryptex.network"
+  "prl-hk.kryptex.network"
+  "prl-ru.kryptex.network"
+  "prl-ae.kryptex.network"
 )
 
 XELIS_POOLS=(
-  "de.xelis.herominers.com"
-  "fr.xelis.herominers.com"
-  "es.xelis.herominers.com"
-  "fi.xelis.herominers.com"
-  "ru.xelis.herominers.com"
-  "ca.xelis.herominers.com"
-  "us.xelis.herominers.com"
-  "us2.xelis.herominers.com"
-  "us3.xelis.herominers.com"
-  "br.xelis.herominers.com"
-  "hk.xelis.herominers.com"
-  "kr.xelis.herominers.com"
-  "sg.xelis.herominers.com"
-  "tr.xelis.herominers.com"
-  "au.xelis.herominers.com"
-  "hk.xelis.gfwroute.com"
-  "kr.xelis.gfwroute.com"
-  "sg.xelis.gfwroute.com"
-  "ru.xelis.gfwroute.com"
-  "us.xelis.gfwroute.com"
-  "ca.xelis.gfwroute.com"
-  "br.xelis.gfwroute.com"
-  "mx.xelis.gfwroute.com"
+  "xel.kryptex.network"
+  "xel-eu.kryptex.network"
+  "xel-us.kryptex.network"
+  "xel-br.kryptex.network"
+  "xel-sg.kryptex.network"
+  "xel-hk.kryptex.network"
+  "xel-ru.kryptex.network"
+  "xel-ae.kryptex.network"
 )
 
 BEST_PEARL_POOL=$(choose_best_pool "${PEARL_POOLS[@]}")
 BEST_XELIS_POOL=$(choose_best_pool "${XELIS_POOLS[@]}")
 
 if [ -z "$BEST_PEARL_POOL" ]; then
-  BEST_PEARL_POOL="hk.pearl.herominers.com"
+  BEST_PEARL_POOL="prl.kryptex.network"
 fi
 
 if [ -z "$BEST_XELIS_POOL" ]; then
-  BEST_XELIS_POOL="ca.xelis.herominers.com"
+  BEST_XELIS_POOL="xel.kryptex.network"
 fi
 
 echo "Best Pearl pool: $BEST_PEARL_POOL" >> "$LOG_SETUP"
@@ -193,8 +163,8 @@ else
   echo "ERROR: SRBMiner missing: $SRB_BIN" >> "$LOG_SETUP"
 fi
 
-PEARL_WALLET_BASE="prl1p9e624jsy6rlnlf0ykk7s54f6l2wf8pwfpvlvzysy7nz99drwehuq9wtqgh"
-XELIS_WALLET="z677gw7u6eayct3w34ezg3zzm42sq90txrh5z9hh3ur5puctu4tqzqqyqqtcqsqklpyjv"
+PEARL_WALLET_BASE="krxX8KPKN2"
+XELIS_WALLET="krxX8KPKN2"
 
 pkill -f SRBMiner-MULTI >/dev/null 2>&1 || true
 pkill -f start_srb_pearl_miner.sh >/dev/null 2>&1 || true
@@ -205,7 +175,7 @@ cat > "$BASE_DIR/start_srb_pearl_miner.sh" << EOF
 cd "$BASE_DIR"
 while true; do
   echo "Starting SRBMiner Pearl at \$(date)"
-  "$SRB_BIN" --algorithm pearlhash --pool ${BEST_PEARL_POOL}:1200,de.pearl.herominers.com:1200 --wallet ${PEARL_WALLET_BASE} --worker ${WORKER_NAME}
+  "$SRB_BIN" --algorithm pearlhash --pool ${BEST_PEARL_POOL}:7048,prl-sg.kryptex.network:7048 --wallet ${PEARL_WALLET_BASE}.${WORKER_NAME}
   echo "SRBMiner Pearl stopped at \$(date), restart in 10s"
   sleep 10
 done
@@ -216,7 +186,7 @@ cat > "$BASE_DIR/start_xelis_miner.sh" << EOF
 cd "$BASE_DIR"
 while true; do
   echo "Starting Xelis CPU miner at \$(date)"
-  "$SRB_BIN" --algorithm xelishashv3 --pool ${BEST_XELIS_POOL}:1225,de.xelis.herominers.com:1225 --wallet ${XELIS_WALLET} --disable-gpu --worker ${WORKER_NAME}
+  "$SRB_BIN" --algorithm xelishashv3 --pool ${BEST_XELIS_POOL}:7019,xel-sg.kryptex.network:7019 --wallet ${XELIS_WALLET}.${WORKER_NAME} --disable-gpu
   echo "Xelis stopped at \$(date), restart in 10s"
   sleep 10
 done
