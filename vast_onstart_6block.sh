@@ -143,9 +143,9 @@ echo "GPU count: $GPU_COUNT" >> "$LOG_SETUP"
 echo "GPU model: $GPU_MODEL" >> "$LOG_SETUP"
 echo "Worker name: $WORKER_NAME" >> "$LOG_SETUP"
 
-SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.8.4/SRBMiner-Multi-3-8-4-Linux.tar.gz"
-SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-8-4-Linux.tar.gz"
-SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-8-4"
+SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.8.5/SRBMiner-Multi-3-8-5-Linux.tar.gz"
+SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-8-5-Linux.tar.gz"
+SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-8-5"
 SRB_BIN="$SRB_DIR/SRBMiner-MULTI"
 
 if [ -f "$SRB_BIN" ]; then
