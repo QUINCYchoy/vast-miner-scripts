@@ -87,14 +87,14 @@ PEARL_POOLS=(
 )
 
 XELIS_POOLS=(
-  "xel.kryptex.network"
-  "xel-eu.kryptex.network"
-  "xel-us.kryptex.network"
-  "xel-br.kryptex.network"
-  "xel-sg.kryptex.network"
-  "xel-hk.kryptex.network"
-  "xel-ru.kryptex.network"
-  "xel-ae.kryptex.network"
+  "xmr.kryptex.network"
+  "xmr-eu.kryptex.network"
+  "xmr-us.kryptex.network"
+  "xmr-br.kryptex.network"
+  "xmr-sg.kryptex.network"
+  "xmr-hk.kryptex.network"
+  "xmr-ru.kryptex.network"
+  "xmr-ae.kryptex.network"
 )
 
 BEST_PEARL_POOL=$(choose_best_pool "${PEARL_POOLS[@]}")
@@ -105,7 +105,7 @@ if [ -z "$BEST_PEARL_POOL" ]; then
 fi
 
 if [ -z "$BEST_XELIS_POOL" ]; then
-  BEST_XELIS_POOL="xel.kryptex.network"
+  BEST_XELIS_POOL="xmr.kryptex.network"
 fi
 
 echo "Best Pearl pool: $BEST_PEARL_POOL" >> "$LOG_SETUP"
@@ -143,9 +143,9 @@ echo "GPU count: $GPU_COUNT" >> "$LOG_SETUP"
 echo "GPU model: $GPU_MODEL" >> "$LOG_SETUP"
 echo "Worker name: $WORKER_NAME" >> "$LOG_SETUP"
 
-SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.8.5/SRBMiner-Multi-3-8-5-Linux.tar.gz"
-SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-8-5-Linux.tar.gz"
-SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-8-5"
+SRB_URL="https://github.com/doktor83/SRBMiner-Multi/releases/download/3.8.6/SRBMiner-Multi-3-8-6-Linux.tar.gz"
+SRB_ARCHIVE="$BASE_DIR/SRBMiner-Multi-3-8-6-Linux.tar.gz"
+SRB_DIR="$BASE_DIR/SRBMiner-Multi-3-8-6"
 SRB_BIN="$SRB_DIR/SRBMiner-MULTI"
 
 if [ -f "$SRB_BIN" ]; then
@@ -186,7 +186,7 @@ cat > "$BASE_DIR/start_xelis_miner.sh" << EOF
 cd "$BASE_DIR"
 while true; do
   echo "Starting Xelis CPU miner at \$(date)"
-  "$SRB_BIN" --algorithm xelishashv3 --pool ${BEST_XELIS_POOL}:7019,xel-sg.kryptex.network:7019 --wallet ${XELIS_WALLET}.${WORKER_NAME} --disable-gpu
+  "$SRB_BIN" --algorithm randomx --pool ${BEST_XELIS_POOL}:7029,xel-sg.kryptex.network:7029 --wallet ${XELIS_WALLET}.${WORKER_NAME} --disable-gpu
   echo "Xelis stopped at \$(date), restart in 10s"
   sleep 10
 done
